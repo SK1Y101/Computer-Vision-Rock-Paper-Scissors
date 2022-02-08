@@ -5,6 +5,15 @@ import cv2, time
 
 wait = time.sleep
 
+# fetch the available options from the labels file
+def fetch_from_file(loc):
+    # open the file
+    with open(loc, "r") as f:
+        # fetch the choices, which will be split by newlines. The final newline should be skipped as well
+        choices = f.read().split("\n")[:-1]
+    # remove the number from the begining of each line, and return
+    return [choice[1+choice.index(" "):] for choice in choices]
+
 # use a keras model to make a prediction and show that to the user
 def show_prediction(model, data, choice):
     # ask the model to make a prediction
@@ -12,14 +21,12 @@ def show_prediction(model, data, choice):
     # sort the prediction from largest to smallest
     psort = np.argsort(pred)[::-1]
     # show the user all the predictions
-    print(*["{} - {: 6.2f}%,".format(choice[x], 100*pred[x]) for x in psort], end="\r")
+    print(*["{} - {: 6.2f}%,".format(choice[loc], 100*pred[loc]) for loc in psort], end="\r")
     # return the most likely choice
     return psort[0]
 
 # use the camera to select rock, paper, or scissors
 def get_rock_paper_scissor(model, capture):
-    choice = ["Rock", "Paper", "Scissors", "None"]
-    selected = _selected = 3
     # keep looping until we have an image
     while True:
         # create the numpy array for the image ( 224x224 pixels )
@@ -33,27 +40,30 @@ def get_rock_paper_scissor(model, capture):
         # add the normalised image to the data array
         data[0] = normalised_image
         # show the user what the model thinks has been chosen
-        selected = show_prediction(model, data, choice)
+        selected = outputs[show_prediction(model, data, outputs)]
         # show the user the image
         cv2.imshow("Press [ Q ] to select", frame)
-        # if the user selected q, then quit
+        # if the user selected q
         if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+            # and the choice isn't none
+            if selected != "Nothing":
+                # then break
+                break
     # remind the user of their choice (also hide the updating bit)
-    print("You have chosen {}{}".format(choice[selected], " "*50))
+    print("You have chosen {}{}".format(selected, " "*50))
     # return the selection
     return selected
 
 # play a round of rock paper scissors
 def play_round(model, capture):
-    # define the three outputs
-    outputs = ["Rock", "paper", "Scissors"]
     # select the computers choice
     computer_choice = np.random.randint(0, 3)
     # fetch the users choice
     user_choice = get_rock_paper_scissor(model, capture)
     # show the user the responses
-    print("Computer: {}\nYou:      {}\n".format(outputs[computer_choice], outputs[user_choice]))
+    print("Computer: {}\nYou:      {}\n".format(outputs[computer_choice], user_choice))
+    # convert the users response to a number
+    user_choice = ["rock", "paper", "scissors"].index(user_choice.lower())
     # compare the responses
     result = (computer_choice - user_choice) % 3
     # determine who won!
@@ -100,8 +110,12 @@ def main(model, capture):
 
 # ensure this is the top level script
 if __name__ == "__main__":
+    # define the model location
+    model_location = "source/keras_model/"
+    # define the three outputs
+    outputs = fetch_from_file(model_location+"labels.txt")
     # fetch the neural network
-    model = load_model("source/keras_model/keras_model.h5")
+    model = load_model(model_location+"keras_model.h5")
     # start the video capture
     capture = cv2.VideoCapture(0)
     # execute the main program script
