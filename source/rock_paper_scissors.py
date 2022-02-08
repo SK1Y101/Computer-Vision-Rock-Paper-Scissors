@@ -1,7 +1,5 @@
 # import required modules
-from random import randint
 import numpy as np
-import math
 
 # return whether the user picked rock, paper, or scissors
 def get_rock_paper_scissor():
@@ -22,15 +20,16 @@ def get_rock_paper_scissor():
 
 # play a round of rock paper scissors
 def play_round():
+    # define the three outputs
     outputs = ["Rock", "paper", "Scissors"]
     # select the computers choice
-    computer_choice = randint(0, 2)
+    computer_choice = np.random.randint(0, 3)
     # fetch the users choice
     user_choice = get_rock_paper_scissor()
     # show the user the responses
     print("Computer: {}\nYou:      {}\n".format(outputs[computer_choice], outputs[user_choice]))
     # compare the responses
-    result = math.fmod(computer_choice - user_choice, 3)
+    result = (computer_choice - user_choice) % 3
     # determine who won!
     if result == 0:
         # the round is a draw if they chose the same
